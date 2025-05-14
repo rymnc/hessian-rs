@@ -1,0 +1,30 @@
+[package]
+name = "hessian-rs"
+version = "0.0.1"
+edition = "2024"
+authors = [
+    "rymnc"
+]
+
+[[bench]]
+name = "field"
+path = "benches/field.rs"
+harness = false
+
+[[bench]]
+name = "projective"
+path = "benches/projective.rs"
+harness = false
+
+[[bench]]
+name = "ring"
+path = "benches/ring.rs"
+harness = false
+
+[dependencies]
+
+[dev-dependencies]
+divan = { version = "0.1.21" }
+proptest = { version = "1.6.0", default-features = false, features = ["std"] }
+rand = { version = "0.8.5" }
+crabtime = { version = "*" }
