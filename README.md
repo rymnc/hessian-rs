@@ -17,9 +17,9 @@ A Rust implementation of Twisted Hessian Curve cryptography over the local ring 
 
 This library implements twisted Hessian curves of the form:
 
-```
+$$
 aX³ + Y³ + Z³ = dXYZ
-```
+$$
 
 Where operations are performed over the local ring Fq[ε] with ε² = 0. Elements in this ring take the form a + bε where a, b ∈ Fq.
 
