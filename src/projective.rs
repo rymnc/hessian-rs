@@ -219,7 +219,7 @@ impl<const Q: u64> Projective<Q> {
 
     /// Verify a & d
     pub fn verify_curve_constraints(a: RingElement<Q>, d: RingElement<Q>) -> bool {
-        let twenty_seven = RingElement::from_field(Fq::<Q>::new(27 % 11)); // 27 mod 11 = 5
+        let twenty_seven = RingElement::from_field(Fq::<Q>::new(27 % Q));
         let twenty_seven_a = twenty_seven.mul(a);
 
         let d_squared = d.mul(d);
