@@ -134,64 +134,75 @@ impl<const Q: u64> Projective<Q> {
         // implementation of Algorithm 3.1 (1) from the paper
 
         // this is weird though, hessian curve additions are supposed to have a unified formula
-        if self.is_equal(other) {
-            // X'₃ = Z₂²X₁Z₁ - Y₁²X₂Y₂
-            // Y'₃ = Y₂²Y₁Z₁ - aX₁²X₂Z₂
-            // Z'₃ = aX₂²X₁Y₁ - Z₁²Y₂Z₂
-            let x1_squared = self.x.mul(self.x);
-            let y1_squared = self.y.mul(self.y);
-            let z1_squared = self.z.mul(self.z);
-
-            let x3 = z1_squared
-                .mul(self.x)
-                .mul(self.z)
-                .sub(y1_squared.mul(self.x).mul(self.y));
-            let y3 = y1_squared
-                .mul(self.y)
-                .mul(self.z)
-                .sub(a.mul(x1_squared).mul(self.x).mul(self.z));
-            let z3 = a
-                .mul(x1_squared)
-                .mul(self.x)
-                .mul(self.y)
-                .sub(z1_squared.mul(self.y).mul(self.z));
-
-            return Projective::new(x3, y3, z3);
-        }
-
-        // X₃ = X₁²Y₂Z₂ - X₂²Y₁Z₁
         let x1_squared = self.x.mul(self.x);
         let x2_squared = other.x.mul(other.x);
-        let term1 = x1_squared.mul(other.y).mul(other.z);
-        let term2 = x2_squared.mul(self.y).mul(self.z);
-        let x3 = term1.sub(term2);
-
-        // Y₃ = Z₁²X₂Y₂ - Z₂²X₁Y₁
-        let z1_squared = self.z.mul(self.z);
-        let z2_squared = other.z.mul(other.z);
-        let term3 = z1_squared.mul(other.x).mul(other.y);
-        let term4 = z2_squared.mul(self.x).mul(self.y);
-        let y3 = term3.sub(term4);
-
-        // Z₃ = Y₁²X₂Z₂ - Y₂²X₁Z₁
         let y1_squared = self.y.mul(self.y);
         let y2_squared = other.y.mul(other.y);
-        let term5 = y1_squared.mul(other.x).mul(other.z);
-        let term6 = y2_squared.mul(self.x).mul(self.z);
-        let z3 = term5.sub(term6);
+        let z1_squared = self.z.mul(self.z);
+        let z2_squared = other.z.mul(other.z);
 
-        // handle special case where both formulas give [0:0:0]
-        if x3.constant().value() == 0
+        // formula (1): X₃ = X₁²Y₂Z₂ - X₂²Y₁Z₁
+        let x3 = x1_squared
+            .mul(other.y)
+            .mul(other.z)
+            .sub(x2_squared.mul(self.y).mul(self.z));
+
+        // Y₃ = Z₁²X₂Y₂ - Z₂²X₁Y₁
+        let y3 = z1_squared
+            .mul(other.x)
+            .mul(other.y)
+            .sub(z2_squared.mul(self.x).mul(self.y));
+
+        // Z₃ = Y₁²X₂Z₂ - Y₂²X₁Z₁
+        let z3 = y1_squared
+            .mul(other.x)
+            .mul(other.z)
+            .sub(y2_squared.mul(self.x).mul(self.z));
+
+        let is_zero = x3.constant().value() == 0
             && x3.epsilon_coeff().value() == 0
             && y3.constant().value() == 0
             && y3.epsilon_coeff().value() == 0
             && z3.constant().value() == 0
-            && z3.epsilon_coeff().value() == 0
-        {
-            panic!("Point addition resulted in invalid point [0:0:0]");
-        }
+            && z3.epsilon_coeff().value() == 0;
 
-        Projective::new(x3, y3, z3)
+        if is_zero {
+            // formula (2) from Theorem 2.1
+            // X'₃ = Z₂²X₁Z₁ - Y₁²X₂Y₂
+            let x3_prime = z2_squared
+                .mul(self.x)
+                .mul(self.z)
+                .sub(y1_squared.mul(other.x).mul(other.y));
+
+            // Y'₃ = Y₂²Y₁Z₁ - aX₁²X₂Z₂
+            let y3_prime = y2_squared
+                .mul(self.y)
+                .mul(self.z)
+                .sub(a.mul(x1_squared).mul(other.x).mul(other.z));
+
+            // Z'₃ = aX₂²X₁Y₁ - Z₁²Y₂Z₂
+            let z3_prime = a
+                .mul(x2_squared)
+                .mul(self.x)
+                .mul(self.y)
+                .sub(z1_squared.mul(other.y).mul(other.z));
+
+            // if this also gives (0,0,0), invalid point
+            let is_zero_prime = x3_prime.constant().value() == 0
+                && x3_prime.epsilon_coeff().value() == 0
+                && y3_prime.constant().value() == 0
+                && y3_prime.epsilon_coeff().value() == 0
+                && z3_prime.constant().value() == 0
+                && z3_prime.epsilon_coeff().value() == 0;
+
+            if is_zero_prime {
+                panic!("Both addition formulas resulted in invalid point [0:0:0]");
+            }
+
+            Projective::new(x3_prime, y3_prime, z3_prime)
+        } else {
+            Projective::new(x3, y3, z3)
+        }
     }
 
     /// Double a point on a twisted Hessian curve (specialized point addition)
